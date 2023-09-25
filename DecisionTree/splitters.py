@@ -3,6 +3,8 @@ import math
 
 def majority_err_splitter(column):
     counts = dict()
+    if len(column) == 0:
+        return 1
     labels = 0
     for i in column:
         if not counts.__contains__(i):
