@@ -48,6 +48,7 @@ def weighted_gain(inputArray, gain_function):
         for i in columnvars:
             subentropy = gain_function(columnvars[i])
             entropysum += len(columnvars[i])/len(labelrow)*subentropy
+        print(gain_function(inputArray[len(inputArray)-1]) - entropysum)
         information.append(entropysum)
     indexofmin = information.index(min(information))
     return indexofmin, medianRow[indexofmin]
@@ -139,23 +140,29 @@ class build_tree:
     def predict(self, vec):
         return self.root.predict(vec)
 
+
 #
-# table = np.array([["s", "h", "h", "w", "-"],
-#                   ["s", "h", "h", "s", "-"],
-#                   ["o", "h", "h", "w", "+"],
-#                   ["r", "m", "h", "w", "+"],
-#                   ["r", "c", "n", "w", "+"],
-#                   ["r", "c", "n", "s", "-"],
-#                   ["o", "c", "n", "s", "+"],
-#                   ["s", "m", "h", "w", "-"],
-#                   ["s", "c", "n", "w", "+"],
-#                   ["r", "m", "n", "w", "+"],
-#                   ["s", "m", "n", "s", "+"],
-#                   ["o", "m", "h", "s", "+"],
-#                   ["o", "h", "n", "w", "+"],
-#                   ["r", "m", "h", "s", "-"],
-#                   ["r", "m", "n", "w", "+"],
-#                   ])
+table = np.array([["s", "h", "h", "w", "-"],
+                  ["s", "h", "h", "s", "-"],
+                  ["o", "h", "h", "w", "+"],
+                  ["r", "m", "h", "w", "+"],
+                  ["r", "c", "n", "w", "+"],
+                  ["r", "c", "n", "s", "-"],
+                  ["o", "c", "n", "s", "+"],
+                  ["s", "m", "h", "w", "-"],
+                  ["s", "c", "n", "w", "+"],
+                  ["r", "m", "n", "w", "+"],
+                  ["s", "m", "n", "s", "+"],
+                  ["o", "m", "h", "s", "+"],
+                  ["o", "h", "n", "w", "+"],
+                  ["r", "m", "h", "s", "-"],
+                  ["o", "m", "n", "w", "+"],
+
+
+                  ])
+
+weighted_gain(table, splitters.majority_err_splitter)
+print(splitters.info_gain_splitter(table[:, 4]))
 # tree = build_tree(table, 6, "E")
 # print(tree.predict(["s", "m", "h", "s"]))
 # print(tree.predict(["o", "m", "h", "s"]))
