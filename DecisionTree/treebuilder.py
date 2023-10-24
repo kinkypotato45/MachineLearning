@@ -1,6 +1,8 @@
+from numpy.lib import median
 import splitters
 import pandas as pd
 import numpy as np
+import copy
 
 
 def weighted_gain(inputArray, gain_function):
@@ -13,45 +15,23 @@ def weighted_gain(inputArray, gain_function):
     inputArray = inputArray.transpose()
     labelrow = inputArray[len(inputArray)-1]
     information = []
-    medianRow = []
     if len(set(labelrow)) == 1:
-        return -1, None
+        return -1
     for row in range(len(inputArray)-1):
         columnvars = {}
-        medianValue = None
         entropysum = 0
-        if inputArray[row][0].strip('-').isnumeric():
-            # entropysum = 1
-            # information.append(entropysum)
-            # continue
-
-            introw = []
-            for i in inputArray[row]:
-                introw.append(int(i))
-            # for i in range(len(inputArray[row])):
-            #     introw.append(int(inputArray[i]))
-            medianValue = np.median(introw)
-            columnvars[0] = []
-            columnvars[1] = []
-
-            for column in range(len(introw)):
-                indicator = 0
-                if int(inputArray[row][column]) > medianValue:
-                    indicator += 1
-                columnvars[indicator].append(labelrow[column])
-        else:
-            for column in range(len(inputArray[row])):
-                if not columnvars.__contains__(inputArray[row][column]) or inputArray[row][column] == "unknown":
-                    columnvars[inputArray[row][column]] = []
-                columnvars[inputArray[row][column]].append(labelrow[column])
-        medianRow.append(medianValue)
+        for column in range(len(inputArray[row])):
+            if not columnvars.__contains__(inputArray[row][column]):
+                # or inputArray[row][column] == "unknown":
+                columnvars[inputArray[row][column]] = []
+            columnvars[inputArray[row][column]].append(labelrow[column])
         for i in columnvars:
             subentropy = gain_function(columnvars[i])
             entropysum += len(columnvars[i])/len(labelrow)*subentropy
-        print(gain_function(inputArray[len(inputArray)-1]) - entropysum)
+        # print(gain_function(inputArray[len(inputArray)-1]) - entropysum)
         information.append(entropysum)
     indexofmin = information.index(min(information))
-    return indexofmin, medianRow[indexofmin]
+    return indexofmin
 
 
 class node:
@@ -61,6 +41,9 @@ class node:
         self.children = {}
         self.inputArray = inputArray
         if maxDepth == 0:
+            # resultArr = inputArray[:, -1]
+            # self.result = max(
+            #     set(resultArr), key=inputArray[:, -1].count())
             counter = {}
             for i in inputArray[:, -1]:
                 if not counter.__contains__(i):
@@ -72,42 +55,23 @@ class node:
                     maxvalue = counter[i]
                     self.result = i
             return
-        self.splitValue, self.medianValue = weighted_gain(
+        self.splitValue = weighted_gain(
             inputArray, calculator)
         if self.splitValue == -1:
             self.result = self.inputArray[:, -1][0]
             return
         frame = pd.DataFrame(inputArray)
-        if self.medianValue is None:
-            groups = frame.groupby(self.splitValue)
-            splitValueValues = set(inputArray[:, self.splitValue])
-            for i in splitValueValues:
-                arr = groups.get_group(i).to_numpy()
-                self.children[i] = node(arr, maxDepth - 1, calculator)
-        else:
-
-            group = frame.groupby(
-                frame[self.splitValue] < str(self.medianValue))
-            try:
-                self.children[0] = node(
-                    group.get_group(True).to_numpy(), maxDepth-1, calculator)
-            except KeyError:
-                self.children[0] = node(
-                    group.get_group(False).to_numpy(), maxDepth-1, calculator)
-            try:
-                self.children[1] = node(group.get_group(
-                    False).to_numpy(), maxDepth-1, calculator)
-            except KeyError:
-                self.children[1] = node(group.get_group(
-                    True).to_numpy(), maxDepth-1, calculator)
+        # if self.medianValue is None:
+        groups = frame.groupby(self.splitValue)
+        splitValueValues = set(inputArray[:, self.splitValue])
+        for i in splitValueValues:
+            # arr = groups.get_group(i).to_numpy()
+            self.children[i] = node(groups.get_group(
+                i).to_numpy(), maxDepth - 1, calculator)
 
     def predict(self, vector):
         if self.result is not None:
             return self.result
-        if self.medianValue is not None:
-            if int(vector[self.splitValue]) > self.medianValue:
-                return self.children[1].predict(vector)
-            return self.children[0].predict(vector)
         if not self.children.__contains__(vector[self.splitValue]):
             common = None
             frequency = {}
@@ -126,6 +90,19 @@ class node:
 
 class build_tree:
     def __init__(self, inputArray, maxDepth, calculator):
+        self.frame = pd.DataFrame(data=inputArray, columns=None)
+        # print(self.frame)
+        self.medians = []
+        for column in self.frame.columns:
+            if pd.api.types.is_numeric_dtype(self.frame[column]):
+                medianValue = self.frame[column].median()
+                self.frame[column] = (
+                    self.frame[column] > medianValue).astype(int)
+                self.medians.append(medianValue)        # match calculator:
+            else:
+                self.medians.append(None)
+        # print(self.frame)
+        # print(self.frame.to_numpy())
         match calculator:
             case "E":
                 self.calc = splitters.info_gain_splitter
@@ -135,10 +112,17 @@ class build_tree:
                 self.calc = splitters.gini_splitter
             case "None":
                 self.calc = splitters.info_gain_splitter
-        self.root = node(inputArray, maxDepth, self.calc)
+        # print(self.frame.to_numpy()[0])
+        # print(self.medians)
+        self.root = node(self.frame.to_numpy(), maxDepth, self.calc)
 
     def predict(self, vec):
-        return self.root.predict(vec)
+        vect = copy.copy(vec)
+        for i in range(len(vect)):
+            if self.medians[i] is not None:
+                vect[i] = 1 if vect[i] > self.medians[i] else 0
+        # print(vect)
+        return self.root.predict(vect)
 
 
 #
@@ -161,10 +145,10 @@ table = np.array([["s", "h", "h", "w", "-"],
 
                   ])
 
-weighted_gain(table, splitters.majority_err_splitter)
-print(splitters.info_gain_splitter(table[:, 4]))
-# tree = build_tree(table, 6, "E")
-# print(tree.predict(["s", "m", "h", "s"]))
+# weighted_gain(table, splitters.majority_err_splitter)
+# print(splitters.info_gain_splitter(table[:, 4]))
+tree = build_tree(table, 4, "E")
+print(tree.predict(["s", "m", "h", "s"]))
 # print(tree.predict(["o", "m", "h", "s"]))
 # df = pd.DataFrame(
 #     table)
