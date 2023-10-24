@@ -1,9 +1,30 @@
 """File for Adaboosting class."""
 import copy
 import math
-import splitters
+
+# import splitters
 import pandas as pd
 import numpy as np
+
+
+def info_gain_splitter(column, weights):
+    size = 0
+    results = {}
+    labels = 0
+    for i in range(len(column)):
+        size += weights[i]
+        if not results.__contains__(column[i]):
+            results[i] = 0
+            labels += 1
+        results[i] += weights[i]
+    entropy = 0
+
+    if labels == 1:
+        return 0
+
+    for i in results:
+        entropy += -results[i] / size * (math.log(results[i] / size) / math.log(labels))
+    return entropy
 
 
 def weighted_gain(input_array, gain_function, weights):
@@ -16,25 +37,31 @@ def weighted_gain(input_array, gain_function, weights):
     :return: returns the column on which the data is to be split, according to the gain function
     """
     input_array = input_array.transpose()
-    labelrow = input_array[len(input_array)-1]
+    labelrow = input_array[len(input_array) - 1]
     information = []
     if len(set(labelrow)) == 1:
         return -1
-    for row in range(len(input_array)-1):
-        columnvars = {}
-        entropysum = 0
-        for column in range(len(input_array[row])):
-            if not columnvars.__contains__(input_array[row][column]):
-                # or input_array[row][column] == "unknown":
-                columnvars[input_array[row][column]] = []
-            columnvars[input_array[row][column]].append(labelrow[column])
-        for i in columnvars.values():
-            subentropy = gain_function(i)
-            entropysum += len(i)/len(labelrow)*subentropy
-        # print(gain_function(input_array[len(inputArray)-1]) - entropysum)
-        information.append(entropysum)
-    indexofmin = information.index(min(information))
-    return indexofmin
+    for row in range(len(input_array) - 1):
+        labels = {}
+        this_row = input_array[row]
+        for item in range(len(this_row)):
+            if not labels.__contains__(item):
+                labels[item] = []
+            labels[item].append([this_row[item], weights[item]])
+
+            # columnvars = {}
+            # entropysum = 0
+            # for column in range(len(input_array[row])):
+            #    if not columnvars.__contains__(input_array[row][column]):
+            #         columnvars[input_array[row][column]] = []
+            #     columnvars[input_array[row][column]].append(labelrow[column])
+            # for i in columnvars.values():
+            #     subentropy = gain_function(i, weights)
+            #     entropysum += len(i) / len(labelrow) * subentropy
+            # print(gain_function(input_array[len(inputArray)-1]) - entropysum)
+            # information.append(entropysum)
+            # indexofmin = information.index(min(information))
+            # return indexofmin
 
 
 class Node:
@@ -52,7 +79,7 @@ class Node:
         self.split_value = None
         self.children = {}
         self.input_array = input_array
-        self.weights = weights
+        # self.weights = weights
         if max_depth == 0:
             # resultArr = input_array[:, -1]
             # self.result = max(
@@ -68,8 +95,7 @@ class Node:
                     maxvalue = counter[i]
                     self.result = i
             return
-        self.split_value = weighted_gain(
-            input_array, calculator, weights)
+        self.split_value = weighted_gain(input_array, calculator, weights)
         if self.split_value == -1:
             self.result = self.input_array[:, -1][0]
             return
@@ -79,8 +105,9 @@ class Node:
         split_value_values = set(input_array[:, self.split_value])
         for i in split_value_values:
             # arr = groups.get_group(i).to_numpy()
-            self.children[i] = Node(groups.get_group(
-                i).to_numpy(), max_depth - 1, calculator)
+            self.children[i] = Node(
+                groups.get_group(i).to_numpy(), max_depth - 1, calculator, weights
+            )
 
     def predict(self, vector):
         """
@@ -126,22 +153,21 @@ class BuildTree:
         for column in self.frame.columns:
             if pd.api.types.is_numeric_dtype(self.frame[column]):
                 median_value = self.frame[column].median()
-                self.frame[column] = (
-                    self.frame[column] > median_value).astype(int)
-                self.medians.append(median_value)        # match calculator:
+                self.frame[column] = (self.frame[column] > median_value).astype(int)
+                self.medians.append(median_value)  # match calculator:
             else:
                 self.medians.append(None)
         # print(self.frame)
         # print(self.frame.to_numpy())
         match calculator:
             case "E":
-                self.calc = splitters.info_gain_splitter
-            case "ME":
-                self.calc = splitters.majority_err_splitter
-            case "GI":
-                self.calc = splitters.gini_splitter
+                self.calc = info_gain_splitter
+            # case "ME":
+            #     self.calc = splitters.majority_err_splitter
+            # case "GI":
+            #     self.calc = splitters.gini_splitter
             case "None":
-                self.calc = splitters.info_gain_splitter
+                self.calc = info_gain_splitter
         # print(self.frame.to_numpy()[0])
         # print(self.medians)
         self.root = Node(self.frame.to_numpy(), max_depth, self.calc, weights)
@@ -169,9 +195,10 @@ class AdaBoost:
         self.data = pd.DataFrame(table)
         self.attr = self.data[self.data.columns[:-1]]
         self.labels = self.data[self.data.columns[-1]]
-        self.weights = [1/len(table)]*len(table)
+        self.weights = [1 / len(table)] * len(table)
+        self.voteWeight = []
         for _ in range(iterations):
-            tree = BuildTree(table, 1, calculator=calculator, self.weights)
+            tree = BuildTree(table, 1, calculator, self.weights)
             err = 0
             correct = []
             for i in range(self.labels.len()):
@@ -180,10 +207,11 @@ class AdaBoost:
                     correct.append(1)
                 else:
                     correct.append(-1)
-            if err >= .5:
+            if err >= 0.5:
                 return
-            alpha = 1/2 * math.log(1/err - 1)
+            alpha = 1 / 2 * math.log(1 / err - 1)
+            self.voteWeight.append(alpha)
             for i in range(len(self.weights)):
-                self.weights[i] = self.weights[i] * \
-                    math.exp(- alpha * correct[i])
-            self.weights = np.norm(self.weights)
+                self.weights[i] = self.weights[i] * math.exp(-alpha * correct[i])
+            length = np.linalg.norm(self.weights)
+            self.weights = [i / length for i in self.weights]
