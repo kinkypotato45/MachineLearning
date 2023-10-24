@@ -1,11 +1,12 @@
-"""File for treebuilder class."""
+"""File for Adaboosting class."""
 import copy
+import math
 import splitters
 import pandas as pd
 import numpy as np
 
 
-def weighted_gain(input_array, gain_function):
+def weighted_gain(input_array, gain_function, weights):
     """
     Use to calculate the best attribute to split for other methods.
 
@@ -39,7 +40,7 @@ def weighted_gain(input_array, gain_function):
 class Node:
     """Node class for constructing tree."""
 
-    def __init__(self, input_array, max_depth, calculator):
+    def __init__(self, input_array, max_depth, calculator, weights):
         """
         Take three arguments to create tree.
 
@@ -51,6 +52,7 @@ class Node:
         self.split_value = None
         self.children = {}
         self.input_array = input_array
+        self.weights = weights
         if max_depth == 0:
             # resultArr = input_array[:, -1]
             # self.result = max(
@@ -67,7 +69,7 @@ class Node:
                     self.result = i
             return
         self.split_value = weighted_gain(
-            input_array, calculator)
+            input_array, calculator, weights)
         if self.split_value == -1:
             self.result = self.input_array[:, -1][0]
             return
@@ -107,7 +109,7 @@ class Node:
 class BuildTree:
     """Use this to build a decision tree."""
 
-    def __init__(self, input_array, max_depth, calculator):
+    def __init__(self, input_array, max_depth, calculator, weights):
         """
         Build your tree using this.
 
@@ -120,6 +122,7 @@ class BuildTree:
         self.frame = pd.DataFrame(data=input_array, columns=None)
         # print(self.frame)
         self.medians = []
+        self.weights = weights
         for column in self.frame.columns:
             if pd.api.types.is_numeric_dtype(self.frame[column]):
                 median_value = self.frame[column].median()
@@ -141,7 +144,7 @@ class BuildTree:
                 self.calc = splitters.info_gain_splitter
         # print(self.frame.to_numpy()[0])
         # print(self.medians)
-        self.root = Node(self.frame.to_numpy(), max_depth, self.calc)
+        self.root = Node(self.frame.to_numpy(), max_depth, self.calc, weights)
 
     def predict(self, vec):
         """
@@ -158,36 +161,29 @@ class BuildTree:
         return self.root.predict(vect)
 
 
-#
-table = np.array([["s", "h", "h", "w", "-"],
-                  ["s", "h", "h", "s", "-"],
-                  ["o", "h", "h", "w", "+"],
-                  ["r", "m", "h", "w", "+"],
-                  ["r", "c", "n", "w", "+"],
-                  ["r", "c", "n", "s", "-"],
-                  ["o", "c", "n", "s", "+"],
-                  ["s", "m", "h", "w", "-"],
-                  ["s", "c", "n", "w", "+"],
-                  ["r", "m", "n", "w", "+"],
-                  ["s", "m", "n", "s", "+"],
-                  ["o", "m", "h", "s", "+"],
-                  ["o", "h", "n", "w", "+"],
-                  ["r", "m", "h", "s", "-"],
-                  ["o", "m", "n", "w", "+"],
+class AdaBoost:
+    """Constructor meant to build a strong classifier from weak ones."""
 
-
-                  ])
-
-# weighted_gain(table, splitters.majority_err_splitter)
-# print(splitters.info_gain_splitter(table[:, 4]))
-# tree = build_tree(table, 4, "E")
-# print(tree.predict(["s", "m", "h", "s"]))
-# print(tree.predict(["o", "m", "h", "s"]))
-# df = pd.DataFrame(
-#     table)
-# groups = df.groupby(0)
-# sunny = groups.get_group("s")
-# rainy = groups.get_group("r")
-# print(sunny)
-#
-# tree = build_tree(table, 5, "E")                   ])
+    def __init__(self, table, iterations, calculator):
+        self.weak_classifiers = []
+        self.data = pd.DataFrame(table)
+        self.attr = self.data[self.data.columns[:-1]]
+        self.labels = self.data[self.data.columns[-1]]
+        self.weights = [1/len(table)]*len(table)
+        for _ in range(iterations):
+            tree = BuildTree(table, 1, calculator=calculator, self.weights)
+            err = 0
+            correct = []
+            for i in range(self.labels.len()):
+                if tree.predict(self.attr[i]) == self.labels[i]:
+                    err += self.weights[i]
+                    correct.append(1)
+                else:
+                    correct.append(-1)
+            if err >= .5:
+                return
+            alpha = 1/2 * math.log(1/err - 1)
+            for i in range(len(self.weights)):
+                self.weights[i] = self.weights[i] * \
+                    math.exp(- alpha * correct[i])
+            self.weights = np.norm(self.weights)

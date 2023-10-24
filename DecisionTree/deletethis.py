@@ -1,5 +1,5 @@
-import treebuilder
 import pandas as pd
+import treebuilder
 
 frame = pd.read_csv("bank-7/train.csv")
 test = pd.read_csv('bank-7/test.csv')
@@ -10,10 +10,10 @@ testing_results = test[test.columns[-1]].to_numpy()
 train_results = frame[frame.columns[-1]].to_numpy()
 training = frame[frame.columns[:-1]].to_numpy()
 
-tree = treebuilder.build_tree(frame, 2, 'E')
-count = 0
-for i in range(len(training)):
-    if tree.predict(training[i]) == train_results[i]:
-        count += 1
+tree = treebuilder.BuildTree(frame, 3, "E")
+Count = 0
+for i in range(len(testing)):
+    if tree.predict(testing[i]) == testing_results[i]:
+        Count += 1
 
-print(count / len(training))
+print(Count / len(training))
