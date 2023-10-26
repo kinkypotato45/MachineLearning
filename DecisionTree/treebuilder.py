@@ -15,11 +15,11 @@ def weighted_gain(input_array, gain_function):
     :return: returns the column on which the data is to be split, according to the gain function
     """
     input_array = input_array.transpose()
-    labelrow = input_array[len(input_array)-1]
+    labelrow = input_array[len(input_array) - 1]
     information = []
     if len(set(labelrow)) == 1:
         return -1
-    for row in range(len(input_array)-1):
+    for row in range(len(input_array) - 1):
         columnvars = {}
         entropysum = 0
         for column in range(len(input_array[row])):
@@ -29,10 +29,11 @@ def weighted_gain(input_array, gain_function):
             columnvars[input_array[row][column]].append(labelrow[column])
         for i in columnvars.values():
             subentropy = gain_function(i)
-            entropysum += len(i)/len(labelrow)*subentropy
+            entropysum += len(i) / len(labelrow) * subentropy
         # print(gain_function(input_array[len(inputArray)-1]) - entropysum)
         information.append(entropysum)
     indexofmin = information.index(min(information))
+    print(information)
     return indexofmin
 
 
@@ -66,8 +67,7 @@ class Node:
                     maxvalue = counter[i]
                     self.result = i
             return
-        self.split_value = weighted_gain(
-            input_array, calculator)
+        self.split_value = weighted_gain(input_array, calculator)
         if self.split_value == -1:
             self.result = self.input_array[:, -1][0]
             return
@@ -77,8 +77,9 @@ class Node:
         split_value_values = set(input_array[:, self.split_value])
         for i in split_value_values:
             # arr = groups.get_group(i).to_numpy()
-            self.children[i] = Node(groups.get_group(
-                i).to_numpy(), max_depth - 1, calculator)
+            self.children[i] = Node(
+                groups.get_group(i).to_numpy(), max_depth - 1, calculator
+            )
 
     def predict(self, vector):
         """
@@ -123,9 +124,8 @@ class BuildTree:
         for column in self.frame.columns:
             if pd.api.types.is_numeric_dtype(self.frame[column]):
                 median_value = self.frame[column].median()
-                self.frame[column] = (
-                    self.frame[column] > median_value).astype(int)
-                self.medians.append(median_value)        # match calculator:
+                self.frame[column] = (self.frame[column] > median_value).astype(int)
+                self.medians.append(median_value)  # match calculator:
             else:
                 self.medians.append(None)
         # print(self.frame)
@@ -159,25 +159,36 @@ class BuildTree:
 
 
 #
-table = np.array([["s", "h", "h", "w", "-"],
-                  ["s", "h", "h", "s", "-"],
-                  ["o", "h", "h", "w", "+"],
-                  ["r", "m", "h", "w", "+"],
-                  ["r", "c", "n", "w", "+"],
-                  ["r", "c", "n", "s", "-"],
-                  ["o", "c", "n", "s", "+"],
-                  ["s", "m", "h", "w", "-"],
-                  ["s", "c", "n", "w", "+"],
-                  ["r", "m", "n", "w", "+"],
-                  ["s", "m", "n", "s", "+"],
-                  ["o", "m", "h", "s", "+"],
-                  ["o", "h", "n", "w", "+"],
-                  ["r", "m", "h", "s", "-"],
-                  ["o", "m", "n", "w", "+"],
+table = np.array(
+    [
+        ["s", "h", "h", "w", "-"],
+        ["s", "h", "h", "s", "-"],
+        ["o", "h", "h", "w", "+"],
+        ["r", "m", "h", "w", "+"],
+        ["r", "c", "n", "w", "+"],
+        ["r", "c", "n", "s", "-"],
+        ["o", "c", "n", "s", "+"],
+        ["s", "m", "h", "w", "-"],
+        ["s", "c", "n", "w", "+"],
+        ["r", "m", "n", "w", "+"],
+        ["s", "m", "n", "s", "+"],
+        ["o", "m", "h", "s", "+"],
+        ["o", "h", "n", "w", "+"],
+        ["r", "m", "h", "s", "-"],
+        ["o", "m", "n", "w", "+"],
+    ]
+)
+table = pd.read_csv("bank/test.csv", header=None)
+for column in table.columns:
+    if pd.api.types.is_numeric_dtype(table[column]):
+        median_value = table[column].median()
+        table[column] = (table[column] > median_value).astype(int)
 
-
-                  ])
-
+# print(table)
+# weights = [1 / len(table)] * len(table)
+# print(weights)
+# print(table.to_numpy())
+weighted_gain(table.to_numpy(), splitters.info_gain_splitter)
 # weighted_gain(table, splitters.majority_err_splitter)
 # print(splitters.info_gain_splitter(table[:, 4]))
 # tree = build_tree(table, 4, "E")
