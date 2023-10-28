@@ -159,36 +159,36 @@ class BuildTree:
 
 
 #
-table = np.array(
-    [
-        ["s", "h", "h", "w", "-"],
-        ["s", "h", "h", "s", "-"],
-        ["o", "h", "h", "w", "+"],
-        ["r", "m", "h", "w", "+"],
-        ["r", "c", "n", "w", "+"],
-        ["r", "c", "n", "s", "-"],
-        ["o", "c", "n", "s", "+"],
-        ["s", "m", "h", "w", "-"],
-        ["s", "c", "n", "w", "+"],
-        ["r", "m", "n", "w", "+"],
-        ["s", "m", "n", "s", "+"],
-        ["o", "m", "h", "s", "+"],
-        ["o", "h", "n", "w", "+"],
-        ["r", "m", "h", "s", "-"],
-        ["o", "m", "n", "w", "+"],
-    ]
-)
-table = pd.read_csv("bank/test.csv", header=None)
-for column in table.columns:
-    if pd.api.types.is_numeric_dtype(table[column]):
-        median_value = table[column].median()
-        table[column] = (table[column] > median_value).astype(int)
+# table = np.array(
+#     [
+#         ["s", "h", "h", "w", "-"],
+#         ["s", "h", "h", "s", "-"],
+#         ["o", "h", "h", "w", "+"],
+#         ["r", "m", "h", "w", "+"],
+#         ["r", "c", "n", "w", "+"],
+#         ["r", "c", "n", "s", "-"],
+#         ["o", "c", "n", "s", "+"],
+#         ["s", "m", "h", "w", "-"],
+#         ["s", "c", "n", "w", "+"],
+#         ["r", "m", "n", "w", "+"],
+#         ["s", "m", "n", "s", "+"],
+#         ["o", "m", "h", "s", "+"],
+#         ["o", "h", "n", "w", "+"],
+#         ["r", "m", "h", "s", "-"],
+#         ["o", "m", "n", "w", "+"],
+#     ]
+# )
+# table = pd.read_csv("bank/test.csv", header=Nore)
+# for column in table.columns:
+#     if pd.api.types.is_numeric_dtype(table[column]):
+#         median_value = table[column].median()
+#         table[column] = (table[column] > median_value).astype(int)
 
 # print(table)
 # weights = [1 / len(table)] * len(table)
 # print(weights)
 # print(table.to_numpy())
-weighted_gain(table.to_numpy(), splitters.info_gain_splitter)
+# weighted_gain(table.to_numpy(), splitters.info_gain_splitter)
 # weighted_gain(table, splitters.majority_err_splitter)
 # print(splitters.info_gain_splitter(table[:, 4]))
 # tree = build_tree(table, 4, "E")

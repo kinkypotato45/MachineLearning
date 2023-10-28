@@ -1,29 +1,29 @@
 """File for Adaboosting class."""
-import copy
 import math
 
-# import splitters
 import pandas as pd
 import numpy as np
+import copy
 
 
 def info_gain_splitter(column, weights):
     # print(len(weights))
-    size = 0
+    size = sum(weights)
     results = {}
     labels = 0
     for i in range(len(column)):
-        size += weights[i]
         if not results.__contains__(column[i]):
             results[column[i]] = 0
             labels += 1
         results[column[i]] += weights[i]
     entropy = 0
-
     if labels == 1:
         return 0
     for i in results.values():
-        entropy += -i * (math.log(i / size) / math.log(labels))
+        entropy += -i * math.log(i / size) / math.log(labels)
+    # print(entropy)
+
+    # print("entropy", entropy)
     return entropy
 
 
@@ -48,8 +48,7 @@ def weighted_gain(input_array, weights):
         for column in range(len(this_row)):
             if not weights_value.__contains__(this_row[column]):
                 weights_value[this_row[column]] = []
-            weights_value[this_row[column]].append(
-                [labelrow[column], weights[column]])
+            weights_value[this_row[column]].append([labelrow[column], weights[column]])
         gain = 0
         for value in weights_value.values():
             attrs = []
@@ -61,6 +60,7 @@ def weighted_gain(input_array, weights):
             gain += info_gain_splitter(attrs, temp_weights)
         information.append(gain)
     # print(information)
+    # print(information.index(min(information)))
 
     return information.index(min(information))
 
@@ -76,23 +76,31 @@ class Node:
         max_depth: max depth tree can build
         calculator: heuristic used to split data
         """
+        # (print(len(weights)),)
+        # print(len(input_array))
         self.result = None
         self.split_value = None
         self.children = {}
         self.input_array = input_array
-        # self.weights = weights
+        self.weights = weights
         if max_depth == 0:
             counter = {}
             results = self.input_array[:, -1]
+            # print(results)
+            # print(results)
             for i in range(len(results)):
                 if not counter.__contains__(results[i]):
                     counter[results[i]] = 0
-                counter[results[i]] += 1
+                counter[results[i]] += weights[i]
             maxvalue = 0
             for i, j in counter.items():
+                # print(i)
+                # print(j)
+                # print("j", j)
                 if j > maxvalue:
                     maxvalue = j
                     self.result = i
+            # print("result", self.result)
             return
         self.split_value = weighted_gain(input_array, weights)
         if self.split_value == -1:
@@ -153,15 +161,16 @@ class BuildTree:
         self.frame = pd.DataFrame(data=input_array, columns=None)
         self.medians = []
         self.weights = weights
-        for column in table.columns:
-            if pd.api.types.is_numeric_dtype(table[column]):
-                median_value = table[column].median()
+        for column in self.frame.columns:
+            if pd.api.types.is_numeric_dtype(self.frame[column]):
+                median_value = self.frame[column].median()
                 self.medians.append(median_value)
-                table[column] = (table[column] > median_value).astype(int)
+                self.frame[column] = (self.frame[column] > median_value).astype(int)
             else:
                 self.medians.append(None)
-        self.medians = self.medians
-
+        self.medians
+        # print(self.medians)
+        # print(self.frame)
         self.root = Node(self.frame.to_numpy(), max_depth, self.weights)
 
     def predict(self, vec):
@@ -171,13 +180,15 @@ class BuildTree:
         argumnts:
         vec: a vector of the same dimension of features as the test setjk
         """
-        vect = copy.copy(vec)
+        vec = copy.copy(vec)
 
-        for i in range(len(vect)):
+        for i in range(len(vec)):
             if self.medians[i] is not None:
-                vect[i] = 1 if vect[i] > self.medians[i] else 0
+                vec[i] = 1 if vec[i] > self.medians[i] else 0
+        # print(vec)
+        # print(vec[11])
 
-        return self.root.predict(vect)
+        return self.root.predict(vec)
 
 
 class AdaBoost:
@@ -188,30 +199,44 @@ class AdaBoost:
         self.data = pd.DataFrame(table)
         self.attr = self.data[self.data.columns[:-1]].to_numpy()
         # print(self.data)
-        self.labels = self.data[self.data.columns[-1]]
+        self.labels = self.data[self.data.columns[-1]].to_numpy()
         self.weights = [1 / len(table)] * len(table)
         self.trees = []
         for _ in range(iterations):
+            # print(self.weights)
             # print(np.linalg.norm(self.weights))
+            # print(self.labels)
             tree = BuildTree(table, 1, self.weights)
             self.trees.append(tree)
             err = 0
+            totalerr = 0
+            count = 0
+            # print(err)
             correct = []
+            prediction = []
             new_weights = self.weights
             for i in range(len(self.labels)):
+                prediction.append(tree.predict(self.attr[i]))
+                count += 1
                 # print(tree.predict(self.attr[i]))
                 if tree.predict(self.attr[i]) != self.labels[i]:
+                    # print(self.weights[i])
+                    totalerr += 1
                     err += self.weights[i]
-                    correct.append(1)
-                else:
                     correct.append(-1)
+                else:
+                    correct.append(1)
+            # print("err:", err)
             if err >= 0.5:
+                return
+            if err == 0:
                 return
             alpha = 1 / 2 * math.log(1 / err - 1)
             self.weak_classifiers.append(alpha)
             for i in range(len(new_weights)):
                 new_weights[i] = new_weights[i] * math.exp(-alpha * correct[i])
             norm = sum(new_weights)
+
             new_weights = [i / norm for i in new_weights]
             self.weights = new_weights
 
@@ -233,15 +258,3 @@ class AdaBoost:
                 maximum = j
                 maxvalue = i
         return maxvalue
-
-
-table = pd.read_csv("data/bank/test.csv", header=None)
-# for column in table.columns:
-#     if pd.api.types.is_numeric_dtype(table[column]):
-#         median_value = table[column].median()
-#         table[column] = (table[column] > median_value).astype(int)
-#
-boost_1 = AdaBoost(table.to_numpy(), 2)
-# weights = [1 / len(table)] * len(table)
-# weighted_gain(table.to_numpy(), weights)
-# tree = BuildTree(table, 1, weights)
