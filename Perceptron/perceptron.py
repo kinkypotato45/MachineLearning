@@ -5,13 +5,9 @@ import pandas as pd
 import numpy as np
 from pandas.core.indexes.api import Axis
 
-frame = pd.read_csv("bank-note-1/train.csv", header=None)
-print(frame)
-print(len(frame.columns))
-
 
 class Perceptron:
-    def __init__(self, frame, r):
+    def __init__(self, frame):
         """
         Takes in a dataframe, and create a linear classifier
 
@@ -22,5 +18,43 @@ class Perceptron:
 
         r: the scale of how much to change weight vector w
         """
-        self.weights = [0] * len(frame.columns)
-        self.frame = frame.clone()
+        ones = pd.DataFrame({"bias": [1] * len(frame)})
+        self.samples = ones.join(frame).to_numpy()
+        # self.classes = {}
+        # print(self.samples)
+
+    def learn(self, r, epochs):
+        self.w = [0] * (len(self.samples[0]) - 1)
+        # print(self.w)
+        yvalues = 1
+        self.valuedict = {}
+        self.returndict = {}
+        for _ in range(epochs):
+            for i in self.samples:
+                x = i[:-1]
+                y = i[-1]
+                if not self.valuedict.__contains__(y):
+                    self.valuedict[y] = yvalues
+                    self.returndict[yvalues] = y
+                    yvalues -= 2
+                if np.dot(self.w, x) * self.valuedict[y] <= 0:
+                    self.w = self.w + r * x * self.valuedict[y]
+
+    def predict(self, input):
+        input = np.append([1], input)
+        # print(input)
+        if np.dot(self.w, input) < 0:
+            return self.returndict[-1]
+        else:
+            return self.returndict[1]
+
+
+this = Perceptron(frame)
+this.learn(0.5, 1)
+frame = frame.to_numpy()
+for i in range(100):
+    row = frame[i]
+    x = row[:-1]
+    y = row[-1]
+    # print(frame[i])
+    print(this.predict(x), y)
