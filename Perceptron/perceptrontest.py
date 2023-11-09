@@ -21,17 +21,17 @@ if __name__ == "__main__":
     for row in frame:
         x = row[:-1]
         y = row[-1]
-        if ave.predict(x) == y:
+        if ave.predict(x) != y:
             aveAccuracy += 1
-        if vote.predict(x) == y:
+        if vote.predict(x) != y:
             voteAccuracy += 1
-        if perc.predict(x) == y:
+        if perc.predict(x) != y:
             percAccuracy += 1
 
         count += 1
-    print("Base Perceptron accuracy, r = .25, epochs = 10:", percAccuracy / count)
-    print("Voted Perceptron accuracy, r = .25, epochs = 10:", voteAccuracy / count)
-    print("Average Perceptron accuracy, r = .25, epochs = 10:", aveAccuracy / count)
+    print("Base Perceptron error, r = .25, epochs = 10:", percAccuracy / count)
+    print("Voted Perceptron error, r = .25, epochs = 10:", voteAccuracy / count)
+    print("Average Perceptron error, r = .25, epochs = 10:", aveAccuracy / count)
     print(
         "Base Perceptron final weight vector, r =.25, epochs = 10:",
         perc.returnWeights(),
