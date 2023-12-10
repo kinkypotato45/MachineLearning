@@ -56,20 +56,16 @@ class NN:
         weights = {}
         L = self.end.value - y
         memo[self.end] = L
-        # print("loss der", L)
         nodeweights = {}
-        # nodeweights[self.end] = []
         temp = []
         for parent in self.end.parents:
             partial = L * parent.value
             temp.append(partial)
             memo[parent] = partial
-            # print(partial)
         nodeweights[self.end] = temp
         print("layer 3: y weights partials:", temp)
 
         for i in range(1, len(self.hidden) + 1):
-            print("row", i)
             j = 0
             for thisnode in self.hidden[-i]:
                 temp = []
@@ -132,29 +128,4 @@ network.hidden[1][2].weights = [1, 2, 3]
 network.end.weights = [-1, 2, -1.5]
 
 network.forwardPass([1, 1])
-print(network.start_layer[0].value)
-print(network.start_layer[1].value)
-print(network.start_layer[2].value)
-for row in network.hidden:
-    for node in row:
-        print(node.value)
-print(network.end.value)
-# print(network.hidden[1][1].parents)
-# for node in network.hidden[1][1].parents:
-#     print(node.value)
-# print(network.hidden[1][1].weights)
 network.backProp(1, 0)
-
-
-def recursive(node, thismap):
-    if thismap.__contains__(node):
-        return
-    print(node.value)
-    thismap.add(node)
-    for i in node.children:
-        recursive(i, thismap)
-
-
-empty = set()
-
-# recursive(network.start_layer[1], empty)
