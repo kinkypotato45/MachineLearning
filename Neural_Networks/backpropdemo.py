@@ -66,10 +66,11 @@ class NN:
             memo[parent] = partial
             # print(partial)
         nodeweights[self.end] = temp
-        print(temp)
+        print("layer 3: y weights partials:", temp)
 
         for i in range(1, len(self.hidden) + 1):
             print("row", i)
+            j = 0
             for thisnode in self.hidden[-i]:
                 temp = []
                 incomplete = memo[thisnode] * \
@@ -82,7 +83,9 @@ class NN:
                     else:
                         memo[parent] = partial
                 nodeweights[thisnode] = temp
-                print(temp)
+                print("layer ", len(self.hidden) + 1 - i,
+                      " node ", j, " partials:", temp)
+                j += 1
             # for thisnode in self.hidden[-i-1]:
 
                 # print(i)
