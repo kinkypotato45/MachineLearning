@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 from LogisticRegression import logistic
+from MLE import MLE
 
 
 def main():
@@ -36,27 +37,25 @@ def main():
             # print(network.predict(row[:-1]), row[-1])
         print('testing error:', err / count, '\n')
 
-    # print('question 2.2c\nTraining and testing error for randomized weights from a Normal dist\n ')
-    # for i in widths:
-    #     print('error for width', i, 'depth 2 NN:')
-    #     thisnetwork = NN(i, 2, training, lambda: np.random.normal())
-    #     thisnetwork.train(8, 0.025, 1)
-    #     count = 0
-    #     err = 0
-    #     for row in nptrain:
-    #         count += 1
-    #         if thisnetwork.predict(row[:-1]) != row[-1]:
-    #             err += 1
-    #         # print(network.predict(row[:-1]), row[-1])
-    #     print('training error:', err / count)
-    #     count = 0
-    #     err = 0
-    #     for row in nptest:
-    #         count += 1
-    #         if thisnetwork.predict(row[:-1]) != row[-1]:
-    #             err += 1
-    #         # print(network.predict(row[:-1]), row[-1])
-    #     print('testing error:', err / count, '\n')
+    print('question 2.3b\n Training and testing error for MLE (LMS regression) \n')
+    mle = MLE(training)
+    mle.train(8, .0025, .5)
+    count = 0
+    err = 0
+    for row in nptrain:
+        count += 1
+        if mle.predict(row[:-1]) != row[-1]:
+            err += 1
+        # print(network.predict(row[:-1]), row[-1])
+    print('training error:', err / count)
+    count = 0
+    err = 0
+    for row in nptest:
+        count += 1
+        if mle.predict(row[:-1]) != row[-1]:
+            err += 1
+        # print(network.predict(row[:-1]), row[-1])
+    print('testing error:', err / count, '\n')
 
 
 if __name__ == '__main__':
