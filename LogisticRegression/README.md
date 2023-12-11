@@ -1,0 +1,2 @@
+This is my implementation of Logistic regression and the MLE regressions (which is the same as LMS). The Logistic regression takes in a variance and a panda dataframe to train its weights, while the LMS just takes in a dataframe
+each class has three methods: A constructor, which takes in a dataset to train on, a training method, which takes gamma and m, for the scheduled learning rate, and predict, which predicts a vector based on what was trained

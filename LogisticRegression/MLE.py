@@ -33,7 +33,6 @@ class MLE:
                 for i in range(len(row)-1):
                     weightder.append(calc * row[i])
                 self.weights = self.weights - np.multiply(rate, weightder)
-                # print(self.weights)
 
                 # self.weights = self.weights-np.dot(rate, weightder)
     def predict(self, x):
