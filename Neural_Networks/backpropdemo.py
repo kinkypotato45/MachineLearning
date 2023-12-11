@@ -112,13 +112,17 @@ class Node:
         self.children.append(node)
 
     def calculate(self):
-        if self.value is None:
-            summation = 0
-            for i in range(len(self.parents)):
-                summation += self.parents[i].value * self.weights[i]
-            self.value = self.function(summation)
+        if not self.parents:
             # print(self.value)
+            return
 
+        summation = 0
+        for i in range(len(self.parents)):
+            summation += self.parents[i].value * self.weights[i]
+        self.value = self.function(summation)
+
+
+print("question 2.2a \n")
 
 network = NN(3, 2, 2, )
 network.hidden[0][1].weights = [-1, -2, -3]
@@ -129,3 +133,4 @@ network.end.weights = [-1, 2, -1.5]
 
 network.forwardPass([1, 1])
 network.backProp(1, 0)
+print("\n")

@@ -1,1 +1,2 @@
-python backpropdemo.py
+python backpropdemo.py;
+python testing.py
