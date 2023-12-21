@@ -2,9 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torchvision.models as models
-
-from utils import compute_gradient, read_image, to_array  # noqa: F401
-from transformers import ResNetForImageClassification
+from transformers import AutoImageProcessor
+from transformers import AutoModelForImageClassification
+from transformers import ViTImageProcessor
+from utils import compute_gradient
+from utils import read_image
+from utils import to_array
 
 
 def func(inp, net=None, target=None):
@@ -25,13 +28,16 @@ def func(inp, net=None, target=None):
     loss : torch.Tensor
         Loss for the 'inp' image.
     """
-    out = net(inp)
+    # print(inp)
+    out = net(inp).logits
+    # print(out)
+    # print(target)
     loss = torch.nn.functional.nll_loss(out, target=torch.LongTensor([target]))
     print(f"Loss: {loss.item()}")
     return loss
 
 
-def attack(tensor, net, eps=.001, n_iter=50):
+def attack(tensor, net, eps=0.001, n_iter=50):
     """Run the fast sign gradient method attack
 
     Parameters
@@ -43,7 +49,7 @@ def attack(tensor, net, eps=.001, n_iter=50):
         Classifier network.
 
     eps : float
-        Determines how much to modify in an interatin
+        Determines how much to modify in an interation
 
     n_iter : int
         number of iterations
@@ -55,15 +61,16 @@ def attack(tensor, net, eps=.001, n_iter=50):
         "fool" the classifier
     """
     new_tensor = tensor.detach().clone()
-    orig_prediction = net(tensor).argmax()
+    orig_prediction = net(tensor).logits.argmax(-1)
+    print(orig_prediction.item())
 
     for _ in range(n_iter):
         net.zero_grad()
         grad = compute_gradient(
-            func, new_tensor, net=net,
-            target=orig_prediction.item())
+            func, new_tensor, net=net, target=orig_prediction
+        )
         new_tensor = torch.clamp(new_tensor + eps * grad.sign(), -2, 2)
-        new_prediction = net(new_tensor).argmax()
+        new_prediction = net(new_tensor).logits.argmax(-1)
         if orig_prediction != new_prediction:
             print(f"new new_prediction : {orig_prediction.item()}")
             print(f"new new_prediction : {new_prediction.item()}")
@@ -72,13 +79,36 @@ def attack(tensor, net, eps=.001, n_iter=50):
 
 
 if __name__ == "__main__":
+    checkpoint = "Bliu3/roadSigns"
 
-    model = models.resnet50(pretrained=True)
+    model = AutoModelForImageClassification.from_pretrained(
+        checkpoint,
+    )
+    # processor = ViTImageProcessor.from_pretrained(checkpoint)
+    # print(processor)
+
+    # model = models.resnet50(pretrained=True)
+    # print(model)
     net = model
     net.eval()
 
-    tensor = read_image("photos/jacamar.jpg")
+    tensor = read_image("photos/STOP_sign.jpg")
+    # print(tensor.size())
+    # logits = net(tensor).logits
+    # print(logits)
+    # print(logits.argmax(-1).item())
+    # print(net(tensor))
+    # print(tensor.size())
+    # with torch.no_grad():
+    #     logits = model(**tensor).logits
+    # predicted_label = logits.argmax(-1).item()
+    # print(predicted_label)
 
+    # print(tensor)
+    # inputTensor = processor(tensor, return_tensors="pt")
+    # print(inputTensor)
+
+    print(tensor)
     new_tensor, orig_prediction, new_prediction = attack(
         tensor, net, eps=1e-3, n_iter=100
     )
@@ -99,7 +129,7 @@ if __name__ == "__main__":
     ax_new.axis("off")
     ax_diff.axis("off")
 
-    ax_orig.set_title("original: jacamar")
+    ax_orig.set_title("original: Stop")
     ax_new.set_title("Modfiied: feather boa")
     ax_diff.set_title("Difference")
 
