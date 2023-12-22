@@ -108,7 +108,7 @@ if __name__ == "__main__":
     # inputTensor = processor(tensor, return_tensors="pt")
     # print(inputTensor)
 
-    print(tensor)
+    # print(tensor)
     new_tensor, orig_prediction, new_prediction = attack(
         tensor, net, eps=1e-3, n_iter=100
     )
@@ -129,8 +129,8 @@ if __name__ == "__main__":
     ax_new.axis("off")
     ax_diff.axis("off")
 
-    ax_orig.set_title("original: Stop")
-    ax_new.set_title("Modfiied: feather boa")
+    ax_orig.set_title(f'original: {orig_prediction}')
+    ax_new.set_title(f"Modfiied: {new_prediction}")
     ax_diff.set_title("Difference")
 
     plt.savefig("photos/res_1.png")
